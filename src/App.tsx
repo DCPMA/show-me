@@ -1,50 +1,57 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { useState, useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+  const [question, setQuestion] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  useEffect(() => {
+    // Focus input whenever the window becomes visible
+    const focusInput = () => {
+      inputRef.current?.focus();
+    };
+    window.addEventListener("focus", focusInput);
+    // Focus on mount too
+    focusInput();
+    return () => window.removeEventListener("focus", focusInput);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        invoke("hide_window");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const q = question.trim();
+    if (!q) return;
+    setQuestion("");
+    await invoke("submit_question", { question: q });
+  };
 
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
+    <div className="input-bar" data-tauri-drag-region>
+      <form onSubmit={handleSubmit} className="input-form">
         <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+          ref={inputRef}
+          type="text"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          placeholder="Ask ShowMe anything... (Esc to dismiss)"
+          className="input-field"
+          autoFocus
         />
-        <button type="submit">Greet</button>
+        <button type="submit" className="submit-btn" disabled={!question.trim()}>
+          Ask
+        </button>
       </form>
-      <p>{greetMsg}</p>
-    </main>
+    </div>
   );
 }
 

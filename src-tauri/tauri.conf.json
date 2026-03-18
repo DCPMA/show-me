@@ -12,9 +12,17 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "ShowMe",
-        "width": 800,
-        "height": 600
+        "width": 600,
+        "height": 72,
+        "resizable": false,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "center": true,
+        "visible": false,
+        "skipTaskbar": true
       }
     ],
     "security": {
