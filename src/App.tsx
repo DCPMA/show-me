@@ -4,15 +4,16 @@ import "./App.css";
 
 function App() {
   const [question, setQuestion] = useState("");
+  const [status, setStatus] = useState<"idle" | "capturing" | "done">("idle");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Focus input whenever the window becomes visible
     const focusInput = () => {
       inputRef.current?.focus();
+      setStatus("idle");
+      setQuestion("");
     };
     window.addEventListener("focus", focusInput);
-    // Focus on mount too
     focusInput();
     return () => window.removeEventListener("focus", focusInput);
   }, []);
@@ -31,26 +32,37 @@ function App() {
     e.preventDefault();
     const q = question.trim();
     if (!q) return;
-    setQuestion("");
-    await invoke("submit_question", { question: q });
+
+    setStatus("capturing");
+    try {
+      await invoke("submit_question", { question: q });
+      setStatus("done");
+    } catch (err) {
+      console.error("Capture failed:", err);
+      setStatus("idle");
+    }
   };
 
   return (
     <div className="input-bar" data-tauri-drag-region>
-      <form onSubmit={handleSubmit} className="input-form">
-        <input
-          ref={inputRef}
-          type="text"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="Ask ShowMe anything... (Esc to dismiss)"
-          className="input-field"
-          autoFocus
-        />
-        <button type="submit" className="submit-btn" disabled={!question.trim()}>
-          Ask
-        </button>
-      </form>
+      {status === "capturing" ? (
+        <div className="status-msg">Capturing screen...</div>
+      ) : (
+        <form onSubmit={handleSubmit} className="input-form">
+          <input
+            ref={inputRef}
+            type="text"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Ask ShowMe anything... (Esc to dismiss)"
+            className="input-field"
+            autoFocus
+          />
+          <button type="submit" className="submit-btn" disabled={!question.trim()}>
+            Ask
+          </button>
+        </form>
+      )}
     </div>
   );
 }
